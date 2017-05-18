@@ -285,7 +285,7 @@ class SQLite3Database extends Database
         $htmlEntityKeywords = htmlentities(utf8_decode($keywords));
 
         $pageClass = 'SilverStripe\\CMS\\Model\\SiteTree';
-		$fileClass = 'SilverStripe\\Assets\\File';
+        $fileClass = 'SilverStripe\\Assets\\File';
 
         $extraFilters = array($pageClass => '', $fileClass => '');
 
@@ -312,9 +312,9 @@ class SQLite3Database extends Database
         $notMatch = $invertedMatch ? "NOT " : "";
         if ($keywords) {
             $match[$pageClass] = "
-				(Title LIKE '%$keywords%' OR MenuTitle LIKE '%$keywords%' OR Content LIKE '%$keywords%' OR MetaDescription LIKE '%$keywords%' OR
-				Title LIKE '%$htmlEntityKeywords%' OR MenuTitle LIKE '%$htmlEntityKeywords%' OR Content LIKE '%$htmlEntityKeywords%' OR MetaDescription LIKE '%$htmlEntityKeywords%')
-			";
+                (Title LIKE '%$keywords%' OR MenuTitle LIKE '%$keywords%' OR Content LIKE '%$keywords%' OR MetaDescription LIKE '%$keywords%' OR
+                Title LIKE '%$htmlEntityKeywords%' OR MenuTitle LIKE '%$htmlEntityKeywords%' OR Content LIKE '%$htmlEntityKeywords%' OR MetaDescription LIKE '%$htmlEntityKeywords%')
+            ";
             $fileClassSQL = Convert::raw2sql($fileClass);
             $match[$fileClass] = "(Name LIKE '%$keywords%' OR Title LIKE '%$keywords%') AND ClassName = '$fileClassSQL'";
 
@@ -419,6 +419,7 @@ class SQLite3Database extends Database
      */
     public function supportsTransactions()
     {
+        return false;
         return version_compare($this->getVersion(), '3.6', '>=');
     }
 
