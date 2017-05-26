@@ -161,8 +161,8 @@ class SQLite3SchemaManager extends DBSchemaManager
         // Switch to "CREATE TEMPORARY TABLE" for temporary tables
         $temporary = empty($options['temporary']) ? "" : "TEMPORARY";
         $this->query("CREATE $temporary TABLE \"$table\" (
-			$fieldSchemas
-		)");
+            $fieldSchemas
+        )");
 
         if ($indexes) {
             foreach ($indexes as $indexName => $indexDetails) {
@@ -362,6 +362,32 @@ class SQLite3SchemaManager extends DBSchemaManager
     }
 
     /**
+     * This takes the index spec which has been provided by a class (ie static $indexes = blah blah)
+     * and turns it into a proper string.
+     * Some indexes may be arrays, such as fulltext and unique indexes, and this allows database-specific
+     * arrays to be created. See {@link requireTable()} for details on the index format.
+     *
+     * @see http://dev.mysql.com/doc/refman/5.0/en/create-index.html
+     * @see parseIndexSpec() for approximate inverse
+     *
+     * @param string|array $indexSpec
+     * @return string
+     */
+    protected function convertIndexSpec($indexSpec)
+    {
+        // Return already converted spec
+        if (!is_array($indexSpec) || !array_key_exists('type', $indexSpec) || !array_key_exists('columns', $indexSpec) || !is_array($indexSpec['columns'])) {
+            throw new \InvalidArgumentException(sprintf('argument to convertIndexSpec must be correct indexSpec, %s given', var_export($indexSpec, true)));
+        }
+
+        // Combine elements into standard string format
+        if ($indexSpec['type'] == 'fulltext') {
+            $indexSpec['type'] = 'index';
+        }
+        return sprintf('%s (%s)', $indexSpec['type'], $this->implodeColumnList($indexSpec['columns']));
+    }
+
+    /**
      * Create an index on a table.
      *
      * @param string $tableName The name of the table.
@@ -370,10 +396,9 @@ class SQLite3SchemaManager extends DBSchemaManager
      */
     public function createIndex($tableName, $indexName, $indexSpec)
     {
-        $parsedSpec = $this->parseIndexSpec($indexName, $indexSpec);
         $sqliteName = $this->buildSQLiteIndexName($tableName, $indexName);
-        $columns = $parsedSpec['value'];
-        $unique = ($parsedSpec['type'] == 'unique') ? 'UNIQUE' : '';
+        $columns = $this->implodeColumnList($indexSpec['columns']);
+        $unique = ($indexSpec['type'] == 'unique') ? 'UNIQUE' : '';
         $this->query("CREATE $unique INDEX IF NOT EXISTS \"$sqliteName\" ON \"$tableName\" ($columns)");
     }
 
@@ -402,18 +427,6 @@ class SQLite3SchemaManager extends DBSchemaManager
         return "{$tableName}_{$indexName}";
     }
 
-    protected function parseIndexSpec($name, $spec)
-    {
-        $spec = parent::parseIndexSpec($name, $spec);
-
-        // Only allow index / unique index types
-        if (!in_array($spec['type'], array('index', 'unique'))) {
-            $spec['type'] = 'index';
-        }
-
-        return $spec;
-    }
-
     public function indexKey($table, $index, $spec)
     {
         return $this->buildSQLiteIndexName($table, $index);
@@ -425,7 +438,6 @@ class SQLite3SchemaManager extends DBSchemaManager
 
         // Enumerate each index and related fields
         foreach ($this->query("PRAGMA index_list(\"$table\")") as $index) {
-
             // The SQLite internal index name, not the actual Silverstripe name
             $indexName = $index["name"];
             $indexType = $index['unique'] ? 'unique' : 'index';
@@ -437,11 +449,10 @@ class SQLite3SchemaManager extends DBSchemaManager
             }
 
             // Safely encode this spec
-            $indexList[$indexName] = $this->parseIndexSpec($indexName, array(
-                'name' => $indexName,
-                'value' => $this->implodeColumnList($list),
+            $indexList[$indexName] = [
+                'columns' => $list,
                 'type' => $indexType
-            ));
+            ];
         }
 
         return $indexList;
