@@ -327,13 +327,6 @@ class SQLite3SchemaManager extends DBSchemaManager
         foreach ($queries as $query) {
             $this->query($query.';');
         }
-
-        // Recreate the indexes
-        foreach ($oldIndexList as $indexName => $indexSpec) {
-            // Rename columns to new columns
-            $indexSpec['value'] = preg_replace("/\"$oldName\"/i", "\"$newName\"", $indexSpec['value']);
-            $this->createIndex($tableName, $indexName, $indexSpec);
-        }
     }
 
     public function fieldList($table)
