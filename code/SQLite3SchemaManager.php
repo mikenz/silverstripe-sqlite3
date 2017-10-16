@@ -4,7 +4,6 @@ namespace SilverStripe\SQLite;
 
 use SilverStripe\Control\Director;
 use SilverStripe\Dev\Debug;
-use SilverStripe\Dev\SapphireTest;
 use SilverStripe\ORM\Connect\DBSchemaManager;
 use Exception;
 
@@ -210,7 +209,7 @@ class SQLite3SchemaManager extends DBSchemaManager
     {
         $ok = true;
 
-        if (!$this->database->getLivesInMemory() && !self::$checked_and_repaired) {
+        if (!self::$checked_and_repaired) {
             $this->alterationMessage("Checking database integrity", "repaired");
 
             // Check for any tables with failed integrity
@@ -442,10 +441,11 @@ class SQLite3SchemaManager extends DBSchemaManager
             }
 
             // Safely encode this spec
-            $indexList[$indexName] = [
+            $indexList[$indexName] = array(
+                'name' => $indexName,
                 'columns' => $list,
-                'type' => $indexType
-            ];
+                'type' => $indexType,
+            );
         }
 
         return $indexList;
