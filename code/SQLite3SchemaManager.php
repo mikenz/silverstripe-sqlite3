@@ -2,10 +2,11 @@
 
 namespace SilverStripe\SQLite;
 
+use Exception;
 use SilverStripe\Control\Director;
+use SilverStripe\Core\Convert;
 use SilverStripe\Dev\Debug;
 use SilverStripe\ORM\Connect\DBSchemaManager;
-use Exception;
 
 /**
  * SQLite schema manager class
@@ -515,7 +516,7 @@ class SQLite3SchemaManager extends DBSchemaManager
     public function enum($values)
     {
         $tablefield = $values['table'] . '.' . $values['name'];
-        $enumValues = implode(',', $values['enums']);
+        $enumValues = implode(",", Convert::raw2sql($values['enums'], true));
 
         // Ensure the cache table exists
         if (empty($this->enum_map)) {
@@ -533,8 +534,8 @@ class SQLite3SchemaManager extends DBSchemaManager
 
         // Set default
         if (!empty($values['default'])) {
-            $default = str_replace(array('"', "'", "\\", "\0"), "", $values['default']);
-            return "TEXT DEFAULT '$default'";
+            $default = Convert::raw2sql($values['default'], true);
+            return "TEXT DEFAULT $default";
         } else {
             return 'TEXT';
         }
