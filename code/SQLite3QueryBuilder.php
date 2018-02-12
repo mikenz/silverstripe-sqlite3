@@ -31,13 +31,13 @@ class SQLite3QueryBuilder extends DBQueryBuilder
         $columns = $query->getColumns();
 
         // Build all rows
-        $rowParts = array();
+        $rowParts = [];
         foreach ($query->getRows() as $row) {
             // Build all columns in this row
             /** @var SQLAssignmentRow $row */
             $assignments = $row->getAssignments();
             // Join SET components together, considering parameters
-            $parts = array();
+            $parts = [];
             foreach ($columns as $column) {
                 // Check if this column has a value for this row
                 if (isset($assignments[$column])) {
@@ -86,7 +86,7 @@ class SQLite3QueryBuilder extends DBQueryBuilder
         // Assert that the array version provides the 'limit' key
         if (! array_key_exists('limit', $limit) || ($limit['limit'] !== null && ! is_numeric($limit['limit']))) {
             throw new InvalidArgumentException(
-                'SQLite3QueryBuilder::buildLimitSQL(): Wrong format for $limit: '. var_export($limit, true)
+                'SQLite3QueryBuilder::buildLimitSQL(): Wrong format for $limit: ' . var_export($limit, true)
             );
         }
 

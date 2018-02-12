@@ -75,7 +75,7 @@ class SQLite3Connector extends DBConnector
      */
     public function parsePreparedParameters($parameters)
     {
-        $values = array();
+        $values = [];
         foreach ($parameters as $value) {
             $phpType = gettype($value);
             $sqlType = null;
@@ -114,10 +114,10 @@ class SQLite3Connector extends DBConnector
                     $this->databaseError("Cannot bind parameter \"$value\" as it is an unsupported type ($phpType)");
                     break;
             }
-            $values[] = array(
+            $values[] = [
                 'type' => $sqlType,
-                'value' => $value
-            );
+                'value' => $value,
+            ];
         }
         return $values;
     }
@@ -165,7 +165,7 @@ class SQLite3Connector extends DBConnector
 
     public function quoteString($value)
     {
-        return "'".$this->escapeString($value)."'";
+        return "'" . $this->escapeString($value) . "'";
     }
 
     public function escapeString($value)

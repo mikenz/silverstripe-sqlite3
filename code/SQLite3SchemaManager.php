@@ -3,6 +3,7 @@
 namespace SilverStripe\SQLite;
 
 use SilverStripe\Control\Director;
+use SilverStripe\Core\Convert;
 use SilverStripe\Dev\Debug;
 use SilverStripe\ORM\Connect\DBSchemaManager;
 use Exception;
@@ -59,10 +60,10 @@ class SQLite3SchemaManager extends DBSchemaManager
     {
         // If in-memory use the current database name only
         if ($this->database->getLivesInMemory()) {
-            return array(
+            return [
                 $this->database->getConnector()->getSelectedDatabase()
-                    ?: 'database'
-            );
+                    ?: 'database',
+            ];
         }
 
         // If using file based database enumerate files in the database directory
@@ -70,7 +71,7 @@ class SQLite3SchemaManager extends DBSchemaManager
         $files = scandir($directory);
 
         // Filter each file in this directory
-        $databases = array();
+        $databases = [];
         if ($files !== false) {
             foreach ($files as $file) {
                 // Filter non-files
@@ -104,7 +105,7 @@ class SQLite3SchemaManager extends DBSchemaManager
      */
     public function flushCache()
     {
-        $this->enum_map = array();
+        $this->enum_map = [];
     }
 
     public function schemaUpdate($callback)
@@ -148,7 +149,7 @@ class SQLite3SchemaManager extends DBSchemaManager
             $fields['ID'] = $this->IdColumn();
         }
 
-        $fieldSchemata = array();
+        $fieldSchemata = [];
         if ($fields) {
             foreach ($fields as $k => $v) {
                 $fieldSchemata[] = "\"$k\" $v";
@@ -159,8 +160,8 @@ class SQLite3SchemaManager extends DBSchemaManager
         // Switch to "CREATE TEMPORARY TABLE" for temporary tables
         $temporary = empty($options['temporary']) ? "" : "TEMPORARY";
         $this->query("CREATE $temporary TABLE \"$table\" (
-			$fieldSchemas
-		)");
+            $fieldSchemas
+        )");
 
         if ($indexes) {
             foreach ($indexes as $indexName => $indexDetails) {
@@ -269,26 +270,26 @@ class SQLite3SchemaManager extends DBSchemaManager
         }
 
         // Update field spec
-        $newColsSpec = array();
+        $newColsSpec = [];
         foreach ($oldFieldList as $name => $oldSpec) {
             $newColsSpec[] = "\"$name\" " . ($name == $fieldName ? $fieldSpec : $oldSpec);
         }
 
-        $queries = array(
+        $queries = [
             "BEGIN TRANSACTION",
             "CREATE TABLE \"{$tableName}_alterfield_{$fieldName}\"(" . implode(',', $newColsSpec) . ")",
             "INSERT INTO \"{$tableName}_alterfield_{$fieldName}\" SELECT {$fieldNameList} FROM \"$tableName\"",
             "DROP TABLE \"$tableName\"",
             "ALTER TABLE \"{$tableName}_alterfield_{$fieldName}\" RENAME TO \"$tableName\"",
-            "COMMIT"
-        );
+            "COMMIT",
+        ];
 
         // Remember original indexes
         $indexList = $this->indexList($tableName);
 
         // Then alter the table column
         foreach ($queries as $query) {
-            $this->query($query.';');
+            $this->query($query . ';');
         }
 
         // Recreate the indexes
@@ -307,8 +308,8 @@ class SQLite3SchemaManager extends DBSchemaManager
         }
 
         // Determine column mappings
-        $oldCols = array();
-        $newColsSpec = array();
+        $oldCols = [];
+        $newColsSpec = [];
         foreach ($oldFieldList as $name => $spec) {
             $oldCols[] = "\"$name\"" . (($name == $oldName) ? " AS $newName" : '');
             $newColsSpec[] = "\"" . (($name == $oldName) ? $newName : $name) . "\" $spec";
@@ -317,21 +318,21 @@ class SQLite3SchemaManager extends DBSchemaManager
         // SQLite doesn't support direct renames through ALTER TABLE
         $oldColsStr = implode(',', $oldCols);
         $newColsSpecStr = implode(',', $newColsSpec);
-        $queries = array(
+        $queries = [
             "BEGIN TRANSACTION",
             "CREATE TABLE \"{$tableName}_renamefield_{$oldName}\" ({$newColsSpecStr})",
             "INSERT INTO \"{$tableName}_renamefield_{$oldName}\" SELECT {$oldColsStr} FROM \"$tableName\"",
             "DROP TABLE \"$tableName\"",
             "ALTER TABLE \"{$tableName}_renamefield_{$oldName}\" RENAME TO \"$tableName\"",
-            "COMMIT"
-        );
+            "COMMIT",
+        ];
 
         // Remember original indexes
         $oldIndexList = $this->indexList($tableName);
 
         // Then alter the table column
         foreach ($queries as $query) {
-            $this->query($query.';');
+            $this->query($query . ';');
         }
 
         // Recreate the indexes
@@ -361,10 +362,10 @@ class SQLite3SchemaManager extends DBSchemaManager
     {
         $sqlCreate = $this->preparedQuery(
             'SELECT "sql" FROM "sqlite_master" WHERE "type" = ? AND "name" = ?',
-            array('table', $table)
+            ['table', $table]
         )->record();
 
-        $fieldList = array();
+        $fieldList = [];
         if ($sqlCreate && $sqlCreate['sql']) {
             preg_match(
                 '/^[\s]*CREATE[\s]+TABLE[\s]+[\'"]?[a-zA-Z0-9_\\\]+[\'"]?[\s]*\((.+)\)[\s]*$/ims',
@@ -373,7 +374,7 @@ class SQLite3SchemaManager extends DBSchemaManager
             );
             $fields = isset($matches[1])
                 ? preg_split('/,(?=(?:[^\'"]*$)|(?:[^\'"]*[\'"][^\'"]*[\'"][^\'"]*)*$)/x', $matches[1])
-                : array();
+                : [];
             foreach ($fields as $field) {
                 $details = preg_split('/\s/', trim($field));
                 $name = array_shift($details);
@@ -431,7 +432,7 @@ class SQLite3SchemaManager extends DBSchemaManager
 
     public function indexList($table)
     {
-        $indexList = array();
+        $indexList = [];
 
         // Enumerate each index and related fields
         foreach ($this->query("PRAGMA index_list(\"$table\")") as $index) {
@@ -440,17 +441,17 @@ class SQLite3SchemaManager extends DBSchemaManager
             $indexType = $index['unique'] ? 'unique' : 'index';
 
             // Determine a clean list of column names within this index
-            $list = array();
+            $list = [];
             foreach ($this->query("PRAGMA index_info(\"$indexName\")") as $details) {
                 $list[] = preg_replace('/^"?(.*)"?$/', '$1', $details['name']);
             }
 
             // Safely encode this spec
-            $indexList[$indexName] = array(
+            $indexList[$indexName] = [
                 'name' => $indexName,
                 'columns' => $list,
                 'type' => $indexType,
-            );
+            ];
         }
 
         return $indexList;
@@ -458,8 +459,8 @@ class SQLite3SchemaManager extends DBSchemaManager
 
     public function tableList()
     {
-        $tables = array();
-        $result = $this->preparedQuery('SELECT name FROM sqlite_master WHERE type = ?', array('table'));
+        $tables = [];
+        $result = $this->preparedQuery('SELECT name FROM sqlite_master WHERE type = ?', ['table']);
         foreach ($result as $record) {
             $table = reset($record);
             $tables[strtolower($table)] = $table;
@@ -507,7 +508,7 @@ class SQLite3SchemaManager extends DBSchemaManager
      *
      * @var array
      */
-    protected $enum_map = array();
+    protected $enum_map = [];
 
     /**
      * Return a enum type-formatted string
@@ -520,7 +521,7 @@ class SQLite3SchemaManager extends DBSchemaManager
     public function enum($values)
     {
         $tablefield = $values['table'] . '.' . $values['name'];
-        $enumValues = implode(',', $values['enums']);
+        $enumValues = implode(",", Convert::raw2sql($values['enums'], true));
 
         // Ensure the cache table exists
         if (empty($this->enum_map)) {
@@ -533,15 +534,15 @@ class SQLite3SchemaManager extends DBSchemaManager
         if (empty($this->enum_map[$tablefield]) || $this->enum_map[$tablefield] != $enumValues) {
             $this->preparedQuery(
                 "REPLACE INTO SQLiteEnums (TableColumn, EnumList) VALUES (?, ?)",
-                array($tablefield, $enumValues)
+                [$tablefield, $enumValues]
             );
             $this->enum_map[$tablefield] = $enumValues;
         }
 
         // Set default
         if (!empty($values['default'])) {
-            $default = str_replace(array('"', "'", "\\", "\0"), "", $values['default']);
-            return "TEXT DEFAULT '$default'";
+            $default = Convert::raw2sql($values['default'], true);
+            return "TEXT DEFAULT $default";
         } else {
             return 'TEXT';
         }
@@ -668,7 +669,7 @@ class SQLite3SchemaManager extends DBSchemaManager
     {
         return (bool)$this->preparedQuery(
             'SELECT "name" FROM "sqlite_master" WHERE "type" = ? AND "name" = ?',
-            array('table', $tableName)
+            ['table', $tableName]
         )->first();
     }
 
@@ -691,7 +692,7 @@ class SQLite3SchemaManager extends DBSchemaManager
         // Retrieve and cache these details from the database
         $classnameinfo = $this->preparedQuery(
             "SELECT EnumList FROM SQLiteEnums WHERE TableColumn = ?",
-            array($tablefield)
+            [$tablefield]
         )->first();
         if ($classnameinfo) {
             $valueList = $classnameinfo['EnumList'];
@@ -700,14 +701,14 @@ class SQLite3SchemaManager extends DBSchemaManager
         }
 
         // Fallback to empty list
-        return array();
+        return [];
     }
 
     public function dbDataType($type)
     {
-        $values = array(
-            'unsigned integer' => 'INT'
-        );
+        $values = [
+            'unsigned integer' => 'INT',
+        ];
 
         if (isset($values[$type])) {
             return $values[$type];

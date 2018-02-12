@@ -23,12 +23,12 @@ class SQLite3Database extends Database
     /**
      * Global environment config for setting 'path'
      */
-    const ENV_PATH = 'SS_SQLITE_DATABASE_PATH';
+    public const ENV_PATH = 'SS_SQLITE_DATABASE_PATH';
 
     /**
      * Global environment config for setting 'key'
      */
-    const ENV_KEY = 'SS_SQLITE_DATABASE_KEY';
+    public const ENV_KEY = 'SS_SQLITE_DATABASE_KEY';
 
     /**
      * Extension added to every database name
@@ -67,10 +67,10 @@ class SQLite3Database extends Database
      *
      * @var array
      */
-    public static $default_pragma = array(
+    public static $default_pragma = [
         'encoding' => '"UTF-8"',
-        'locking_mode' => 'NORMAL'
-    );
+        'locking_mode' => 'NORMAL',
+    ];
 
 
     /**
@@ -302,13 +302,13 @@ class SQLite3Database extends Database
     ) {
         $start = (int)$start;
         $pageLength = (int)$pageLength;
-        $keywords = $this->escapeString(str_replace(array('*', '+', '-', '"', '\''), '', $keywords));
+        $keywords = $this->escapeString(str_replace(['*', '+', '-', '"', '\''], '', $keywords));
         $htmlEntityKeywords = htmlentities(utf8_decode($keywords));
 
         $pageClass = 'SilverStripe\\CMS\\Model\\SiteTree';
         $fileClass = 'SilverStripe\\Assets\\File';
 
-        $extraFilters = array($pageClass => '', $fileClass => '');
+        $extraFilters = [$pageClass => '', $fileClass => ''];
 
         if ($extraFilter) {
             $extraFilters[$pageClass] = " AND $extraFilter";
@@ -357,7 +357,7 @@ class SQLite3Database extends Database
         }
 
         // Generate initial queries
-        $queries = array();
+        $queries = [];
         foreach ($classesToSearch as $class) {
             $queries[$class] = DataList::create($class)
                 ->where($notMatch . $match[$class] . $extraFilters[$class])
@@ -366,8 +366,8 @@ class SQLite3Database extends Database
         }
 
         // Make column selection lists
-        $select = array(
-            $pageClass => array(
+        $select = [
+            $pageClass => [
                 "\"ClassName\"",
                 "\"ID\"",
                 "\"ParentID\"",
@@ -378,9 +378,9 @@ class SQLite3Database extends Database
                 "\"Created\"",
                 "NULL AS \"Name\"",
                 "\"CanViewType\"",
-                $relevance[$pageClass] . " AS Relevance"
-            ),
-            $fileClass => array(
+                $relevance[$pageClass] . " AS Relevance",
+            ],
+            $fileClass => [
                 "\"ClassName\"",
                 "\"ID\"",
                 "NULL AS \"ParentID\"",
@@ -391,15 +391,15 @@ class SQLite3Database extends Database
                 "\"Created\"",
                 "\"Name\"",
                 "NULL AS \"CanViewType\"",
-                $relevance[$fileClass] . " AS Relevance"
-            )
-        );
+                $relevance[$fileClass] . " AS Relevance",
+            ],
+        ];
 
         // Process queries
         foreach ($classesToSearch as $class) {
             // There's no need to do all that joining
-            $queries[$class]->setFrom('"'.DataObject::getSchema()->baseDataTable($class).'"');
-            $queries[$class]->setSelect(array());
+            $queries[$class]->setFrom('"' . DataObject::getSchema()->baseDataTable($class) . '"');
+            $queries[$class]->setSelect([]);
             foreach ($select[$class] as $clause) {
                 if (preg_match('/^(.*) +AS +"?([^"]*)"?/i', $clause, $matches)) {
                     $queries[$class]->selectField($matches[1], $matches[2]);
@@ -408,12 +408,12 @@ class SQLite3Database extends Database
                 }
             }
 
-            $queries[$class]->setOrderBy(array());
+            $queries[$class]->setOrderBy([]);
         }
 
         // Combine queries
-        $querySQLs = array();
-        $queryParameters = array();
+        $querySQLs = [];
+        $queryParameters = [];
         $totalCount = 0;
         foreach ($queries as $query) {
             /** @var SQLSelect $query */
@@ -447,10 +447,11 @@ class SQLite3Database extends Database
      */
     public function supportsTransactions()
     {
+        //    return false;
         return version_compare($this->getVersion(), '3.6', '>=');
     }
 
-    public function supportsExtensions($extensions = array('partitions', 'tablespaces', 'clustering'))
+    public function supportsExtensions($extensions = ['partitions', 'tablespaces', 'clustering'])
     {
         if (isset($extensions['partitions'])) {
             return true;
@@ -529,19 +530,19 @@ class SQLite3Database extends Database
     {
         preg_match_all('/%(.)/', $format, $matches);
         foreach ($matches[1] as $match) {
-            if (array_search($match, array('Y', 'm', 'd', 'H', 'i', 's', 'U')) === false) {
+            if (array_search($match, ['Y', 'm', 'd', 'H', 'i', 's', 'U']) === false) {
                 user_error('formattedDatetimeClause(): unsupported format character %' . $match, E_USER_WARNING);
             }
         }
 
-        $translate = array(
+        $translate = [
             '/%i/' => '%M',
             '/%s/' => '%S',
             '/%U/' => '%s',
-        );
+        ];
         $format = preg_replace(array_keys($translate), array_values($translate), $format);
 
-        $modifiers = array();
+        $modifiers = [];
         if ($format == '%s' && $date != 'now') {
             $modifiers[] = 'utc';
         }
@@ -561,7 +562,7 @@ class SQLite3Database extends Database
 
     public function datetimeIntervalClause($date, $interval)
     {
-        $modifiers = array();
+        $modifiers = [];
         if ($date == 'now') {
             $modifiers[] = 'localtime';
         }
@@ -578,8 +579,8 @@ class SQLite3Database extends Database
 
     public function datetimeDifferenceClause($date1, $date2)
     {
-        $modifiers1 = array();
-        $modifiers2 = array();
+        $modifiers1 = [];
+        $modifiers2 = [];
 
         if ($date1 == 'now') {
             $modifiers1[] = 'localtime';

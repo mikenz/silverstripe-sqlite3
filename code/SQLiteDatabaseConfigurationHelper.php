@@ -90,11 +90,11 @@ class SQLiteDatabaseConfigurationHelper implements DatabaseConfigurationHelper
             $error = "Permission denied";
         }
 
-        return array(
+        return [
             'success' => $success,
             'error' => $error,
-            'path' => $path
-        );
+            'path' => $path,
+        ];
     }
 
     /**
@@ -109,43 +109,43 @@ class SQLiteDatabaseConfigurationHelper implements DatabaseConfigurationHelper
     {
         // Do additional validation around file paths
         if (empty($databaseConfig['path'])) {
-            return array(
+            return [
                 'success' => false,
-                'error' => "Missing directory path"
-            );
+                'error' => "Missing directory path",
+            ];
         }
         if (empty($databaseConfig['database'])) {
-            return array(
+            return [
                 'success' => false,
-                'error' => "Missing database filename"
-            );
+                'error' => "Missing database filename",
+            ];
         }
 
         // Create and secure db directory
         $path = $databaseConfig['path'];
         $dirCreated = self::create_db_dir($path);
         if (!$dirCreated) {
-            return array(
+            return [
                 'success' => false,
-                'error' => sprintf('Cannot create path: "%s"', $path)
-            );
+                'error' => sprintf('Cannot create path: "%s"', $path),
+            ];
         }
         $dirSecured = self::secure_db_dir($path);
         if (!$dirSecured) {
-            return array(
+            return [
                 'success' => false,
-                'error' => sprintf('Cannot secure path through .htaccess: "%s"', $path)
-            );
+                'error' => sprintf('Cannot secure path through .htaccess: "%s"', $path),
+            ];
         }
 
         $conn = $this->createConnection($databaseConfig, $error);
         $success = !empty($conn);
 
-        return array(
+        return [
             'success' => $success,
             'connection' => $conn,
-            'error' => $error
-        );
+            'error' => $error,
+        ];
     }
 
     public function getDatabaseVersion($databaseConfig)
@@ -183,20 +183,20 @@ class SQLiteDatabaseConfigurationHelper implements DatabaseConfigurationHelper
             }
         }
 
-        return array(
+        return [
             'success' => $success,
-            'error' => $error
-        );
+            'error' => $error,
+        ];
     }
 
     public function requireDatabaseOrCreatePermissions($databaseConfig)
     {
         $conn = $this->createConnection($databaseConfig, $error);
         $success = $alreadyExists = !empty($conn);
-        return array(
+        return [
             'success' => $success,
             'alreadyExists' => $alreadyExists,
-        );
+        ];
     }
 
     /**
@@ -230,9 +230,9 @@ class SQLiteDatabaseConfigurationHelper implements DatabaseConfigurationHelper
     public function requireDatabaseAlterPermissions($databaseConfig)
     {
         // no concept of table-specific permissions; If you can connect you can alter schema
-        return array(
+        return [
             'success' => true,
-            'applies' => false
-        );
+            'applies' => false,
+        ];
     }
 }
