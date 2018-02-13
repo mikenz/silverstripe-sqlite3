@@ -56,6 +56,32 @@ class SQLite3SchemaManager extends DBSchemaManager
         }
     }
 
+    /**
+     * This takes the index spec which has been provided by a class (ie static $indexes = blah blah)
+     * and turns it into a proper string.
+     * Some indexes may be arrays, such as fulltext and unique indexes, and this allows database-specific
+     * arrays to be created. See {@link requireTable()} for details on the index format.
+     *
+     * @see http://dev.mysql.com/doc/refman/5.0/en/create-index.html
+     * @see parseIndexSpec() for approximate inverse
+     *
+     * @param string|array $indexSpec
+     * @return string
+     */
+    protected function convertIndexSpec($indexSpec)
+    {
+        // Return already converted spec
+        if (!is_array($indexSpec) || !array_key_exists('type', $indexSpec) || !array_key_exists('columns', $indexSpec) || !is_array($indexSpec['columns'])) {
+            throw new \InvalidArgumentException(sprintf('argument to convertIndexSpec must be correct indexSpec, %s given', var_export($indexSpec, true)));
+        }
+
+        // Combine elements into standard string format
+        if ($indexSpec['type'] == 'fulltext') {
+            $indexSpec['type'] = 'index';
+        }
+        return sprintf('%s (%s)', $indexSpec['type'], $this->implodeColumnList($indexSpec['columns']));
+    }
+
     public function databaseList()
     {
         // If in-memory use the current database name only
